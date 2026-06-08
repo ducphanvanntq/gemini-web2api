@@ -1,0 +1,134 @@
+name: release
+
+# Manual trigger only. Run from the Actions tab → "release" → "Run workflow".
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.1.0)"
+        required: true
+        default: "v1.1.0"
+      push_docker:
+        description: "Also build & push Docker image to GHCR"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write   # create releases
+  packages: write   # push to ghcr.io
+
+jobs:
+  # ─── Build downloadable binaries for each platform ──────────────────────────
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            asset: gemini-web2api-linux-x86_64
+            ext: ""
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            asset: gemini-web2api-windows-x86_64
+            ext: ".exe"
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            asset: gemini-web2api-macos-aarch64
+            ext: ""
+          - os: macos-13
+            target: x86_64-apple-darwin
+            asset: gemini-web2api-macos-x86_64
+            ext: ""
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OpenSSL (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build release
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package
+        shell: bash
+        run: |
+          bin="target/${{ matrix.target }}/release/gemini-web2api${{ matrix.ext }}"
+          mkdir -p dist
+          cp "$bin" "dist/gemini-web2api${{ matrix.ext }}"
+          cp config.example.json README.md dist/
+          cd dist
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            7z a "../${{ matrix.asset }}.zip" ./*
+          else
+            tar czf "../${{ matrix.asset }}.tar.gz" ./*
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: |
+            ${{ matrix.asset }}.zip
+            ${{ matrix.asset }}.tar.gz
+          if-no-files-found: ignore
+
+  # ─── Create a GitHub Release with the binaries attached ─────────────────────
+  release:
+    name: GitHub Release
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          name: ${{ inputs.tag }}
+          generate_release_notes: true
+          files: artifacts/*
+
+  # ─── Build & push the Docker image to GitHub Container Registry ─────────────
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    if: ${{ inputs.push_docker }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lowercase image name
+        id: img
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.img.outputs.name }}:${{ inputs.tag }}
+            ${{ steps.img.outputs.name }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

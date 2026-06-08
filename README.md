@@ -62,6 +62,42 @@ Identical schema to the Python project's `config.json`. See the parent
 `tokio` + `axum` (HTTP server/SSE) · `reqwest` (upstream client) ·
 `serde_json` (protocol JSON) · `regex` · `sha1` · `clap`.
 
+## Releases & Docker image (CI/CD)
+
+A manual GitHub Actions workflow ([.github/workflows/release.yml](.github/workflows/release.yml))
+builds everything on demand:
+
+1. Go to the repo **Actions** tab → **release** → **Run workflow**.
+2. Enter a `tag` (e.g. `v1.1.0`) and choose whether to push the Docker image.
+
+It produces:
+
+- **Downloadable binaries** attached to a GitHub Release — Linux (x86_64),
+  Windows (x86_64), macOS (arm64 + x86_64), each packaged with `config.example.json`.
+- **A Docker image** pushed to GHCR: `ghcr.io/<owner>/gemini-web2api:<tag>` and `:latest`.
+
+### Use a released binary
+
+Download the archive for your OS from the Releases page, extract, then:
+
+```bash
+cp config.example.json config.json
+./gemini-web2api --config config.json
+```
+
+> Linux binaries are built with OpenSSL (native-tls); a recent `libssl` must be
+> present (it is on most distros). The Docker image ships it already.
+
+### Pull the Docker image
+
+```bash
+docker run -d -p 8081:8081 \
+  -v ./config.json:/app/config.json \
+  ghcr.io/<owner>/gemini-web2api:latest
+```
+
+(Make the GHCR package public in the repo's Packages settings if you want anonymous pulls.)
+
 ## Differences from the Python version
 
 - Token counts use Unicode scalar count / 4 (Python uses `len()`); negligible.
