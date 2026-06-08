@@ -30,18 +30,22 @@ jobs:
             target: x86_64-unknown-linux-gnu
             asset: gemini-web2api-linux-x86_64
             ext: ""
+            archive: tar.gz
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             asset: gemini-web2api-windows-x86_64
             ext: ".exe"
+            archive: zip
           - os: macos-latest
             target: aarch64-apple-darwin
             asset: gemini-web2api-macos-aarch64
             ext: ""
+            archive: tar.gz
           - os: macos-13
             target: x86_64-apple-darwin
             asset: gemini-web2api-macos-x86_64
             ext: ""
+            archive: tar.gz
     steps:
       - uses: actions/checkout@v4
 
@@ -68,7 +72,7 @@ jobs:
           cp "$bin" "dist/gemini-web2api${{ matrix.ext }}"
           cp config.example.json README.md dist/
           cd dist
-          if [ "${{ runner.os }}" = "Windows" ]; then
+          if [ "${{ matrix.archive }}" = "zip" ]; then
             7z a "../${{ matrix.asset }}.zip" ./*
           else
             tar czf "../${{ matrix.asset }}.tar.gz" ./*
@@ -77,10 +81,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset }}
-          path: |
-            ${{ matrix.asset }}.zip
-            ${{ matrix.asset }}.tar.gz
-          if-no-files-found: ignore
+          path: ${{ matrix.asset }}.${{ matrix.archive }}
 
   # ─── Create a GitHub Release with the binaries attached ─────────────────────
   release:

@@ -4,6 +4,32 @@ A 1-to-1 Rust port of the Python `gemini-web2api`. Converts the Google Gemini we
 interface into an OpenAI-compatible API. Compiles to a single static binary — no
 Python or runtime dependencies needed.
 
+## Install (one-line)
+
+Installs the latest released binary to your PATH and writes a default config to
+`~/.config/gemini-web2api/config.json`.
+
+**macOS / Linux:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/ducphanvanntq/gemini-web2api/main/scripts/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+iwr -useb https://raw.githubusercontent.com/ducphanvanntq/gemini-web2api/main/scripts/install.ps1 | iex
+```
+
+Then start the server:
+```bash
+gemini-web2api          # http://localhost:8081/v1
+```
+
+> Requires a published release. If none exists yet, run the **release** workflow
+> first (Actions → release → Run workflow), or build from source below.
+
+The installers honor `REPO`, `VERSION`, and `PREFIX` (sh) / `-Repo`, `-Version`,
+`-Prefix` (ps1) overrides.
+
 ## Build
 
 ```bash
