@@ -41,11 +41,6 @@ jobs:
             asset: gemini-web2api-macos-aarch64
             ext: ""
             archive: tar.gz
-          - os: macos-13
-            target: x86_64-apple-darwin
-            asset: gemini-web2api-macos-x86_64
-            ext: ""
-            archive: tar.gz
     steps:
       - uses: actions/checkout@v4
 

@@ -22,7 +22,11 @@ case "$uname_s" in
   Darwin)
     case "$uname_m" in
       arm64|aarch64) ASSET="gemini-web2api-macos-aarch64.tar.gz" ;;
-      x86_64)        ASSET="gemini-web2api-macos-x86_64.tar.gz" ;;
+      x86_64)
+        echo "macOS Intel (x86_64) is not published as a prebuilt binary." >&2
+        echo "Build from source: cargo build --release" >&2
+        exit 1
+        ;;
       *) echo "Unsupported macOS arch: $uname_m" >&2; exit 1 ;;
     esac
     ;;

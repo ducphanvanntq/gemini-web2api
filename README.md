@@ -99,7 +99,7 @@ builds everything on demand:
 It produces:
 
 - **Downloadable binaries** attached to a GitHub Release — Linux (x86_64),
-  Windows (x86_64), macOS (arm64 + x86_64), each packaged with `config.example.json`.
+  Windows (x86_64), macOS (arm64), each packaged with `config.example.json`.
 - **A Docker image** pushed to GHCR: `ghcr.io/<owner>/gemini-web2api:<tag>` and `:latest`.
 
 ### Use a released binary
